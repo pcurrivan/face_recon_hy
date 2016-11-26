@@ -1,6 +1,6 @@
 <?php
 
-    $dir = "../data/vid/";
+    $dir = "../../videos";
     $filename = $dir . basename($_FILES["file"]["name"]);
     // If submit value is set, validate file type and extract file info
     if(isset($_POST["submit"])) {
