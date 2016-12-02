@@ -9,7 +9,7 @@
         // Temp hardcoded connection info
         $host = "host=127.0.0.1";
         $port = "port=5432";
-        $dbname = "dbname=teamhellyeah";
+        $dbname = "dbname=pipedream";
         $cred = "user=postgres password=postgres";
         
         // Note: Pass PGSQL_CONNECT_FORCE_NEW if multiple connections desired
