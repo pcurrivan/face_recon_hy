@@ -7,7 +7,7 @@
         if(is_session_valid()) {
             echo(file_to_html('../account.html'));
         } else {
-            header("Location: ../login.html");
+            header("Location: ../login.php");
             exit();
         }
     }
