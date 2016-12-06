@@ -167,7 +167,7 @@ public:
 
         //construct current file path:
         stringstream ss;
-        ss << videoId << "." << currentFrame << ".jpg";
+        ss << videoId << "." << currentFrame << ".png";
         boost::filesystem::path file = boost::filesystem::path(ss.str());
         currentFile = inputDir / file;
 
