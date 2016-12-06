@@ -4,7 +4,7 @@ sudo -v
 # install packages
 sudo apt-get update
 sudo apt-get -y upgrade
-sudo apt-get -y install build-essential cmake git libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev python-dev python-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev libdc1394-22-dev libboost-all-dev libtbb-dev libopenblas-dev libeigen3-dev default-jdk ant
+sudo apt-get -y install build-essential cmake git libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev python-dev python-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev libdc1394-22-dev libboost-all-dev libtbb-dev libopenblas-dev libeigen3-dev default-jdk ant libpq-dev postgresql-server-dev-all
 
 # install opencv
 sudo -v

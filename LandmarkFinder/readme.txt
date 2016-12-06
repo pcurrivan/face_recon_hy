@@ -6,6 +6,7 @@ openface_setup.sh contains commands to install OpenFace. You can try running the
 
 After installing OpenFace, overwrite the original code with the provided code in OpenFace/, then rebuild FaceLandmarkDetector with:
 cd OpenFace/build
+cmake ..
 make FaceLandmarkImg
 
 The executable will appear in OpenFace/build/bin
