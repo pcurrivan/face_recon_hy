@@ -391,10 +391,7 @@ int main (int argc, char **argv)
         cout << "Found " << face_detections.size() << " faces in this image\n";
         cout << "Detecting landmarks..." << endl;
 
-        // Detect landmarks around detected faces
-        int face_det = 0;
-        // perform landmark detection for every face detected
-        for(size_t face=0; face < face_detections.size(); ++face)
+        for(size_t face=0; face < face_detections.size() && face < 1; ++face) //hack to only do one face
         {
             // if there are multiple detections go through them
             bool success = LandmarkDetector::DetectLandmarksInImage(grayscale_image, depth_image, face_detections[face], clnf_model, det_parameters);
@@ -402,11 +399,9 @@ int main (int argc, char **argv)
             // Estimate head pose
             cv::Vec6d headPose = LandmarkDetector::GetCorrectedPoseWorld(clnf_model, fx, fy, cx, cy);
 
-            landmarkFinder.processFrame(clnf_model, headPose);
-
             if(success)
             {
-                face_det++;
+                landmarkFinder.processFrame(clnf_model, headPose);
             }
         }
     }
