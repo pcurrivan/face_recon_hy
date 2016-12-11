@@ -329,16 +329,13 @@ int main (int argc, char **argv)
         << "db info: " << dbHost << ", " << dbName << ", " << dbUser << ", " << dbPassword << endl
         << "videoId: " << videoId << endl;
 
-    // No need to validate detections, as we're not doing tracking
-    det_parameters.validate_detections = false;
-
     ////////////////////////////////////////////////////////////////////////
     // LOAD MODULES
     ////////////////////////////////////////////////////////////////////////
     cout << "Loading face detection modules..." << endl;
     clnf_model = LandmarkDetector::CLNF(det_parameters.model_location);
     classifier = cv::CascadeClassifier(det_parameters.face_detector_location);
-    face_detector_hog = dlib::get_frontal_face_detector();
+//    face_detector_hog = dlib::get_frontal_face_detector();
     cout << "Modules loaded" << endl;
 
     ////////////////////////////////////////////////////////////////////////
@@ -349,25 +346,21 @@ int main (int argc, char **argv)
     LandmarkFinder landmarkFinder;
     while(landmarkFinder.nextFrame())
     {
-        // Loading image
+        // Load Image
         string file = landmarkFinder.currentFile.string();
         cv::Mat read_image = cv::imread(file, -1);
-        cout << "Loaded file: " << file << endl;
-
         if (read_image.empty())
         {
             cout << "Could not read the input image" << endl;
             return 1;
         }
+        cout << "Loaded file: " << file << endl;
 
-        // Loading depth file if exists (optional)
-        cv::Mat_<float> depth_image;
-
-        // Making sure the image is in uchar grayscale
+        // Convert to Grayscale
         cv::Mat_<uchar> grayscale_image;
         convert_to_grayscale(read_image, grayscale_image);
 
-        //approximate face position? ...not very good...
+        // Guess camera parameters for pose estimation
         float fx = 0, fy = 0, cx = 0, cy = 0;
         cx = grayscale_image.cols / 2.0f;
         cy = grayscale_image.rows / 2.0f;
@@ -376,34 +369,18 @@ int main (int argc, char **argv)
         fx = (fx + fy) / 2.0;
         fy = fx;
 
-	    cout << "Detecting faces in image..." << endl;
-        // Detect faces in an image
-        vector<cv::Rect_<double> > face_detections;
-
-        if(det_parameters.curr_face_detector == LandmarkDetector::FaceModelParameters::HOG_SVM_DETECTOR)
+	    cout << "Looking for a face..." << endl;
+        cv::Rect_<double> face_detection;
+        if (LandmarkDetector::DetectSingleFace(face_detection, grayscale_image, classifier, cv::Point2i(-1,-1)))
         {
-            vector<double> confidences;
-            LandmarkDetector::DetectFacesHOG(face_detections, grayscale_image, face_detector_hog, confidences);
-        }
-        else
-        {
-            LandmarkDetector::DetectFaces(face_detections, grayscale_image, classifier);
-        }
-
-        cout << "Found " << face_detections.size() << " faces in this image\n";
-        cout << "Detecting landmarks..." << endl;
-
-        for(size_t face=0; face < face_detections.size() && face < 1; ++face) //hack to only do one face
-        {
-            // if there are multiple detections go through them
-            bool success = LandmarkDetector::DetectLandmarksInVideo(grayscale_image, depth_image, face_detections[face], clnf_model, det_parameters);
-//            bool success = LandmarkDetector::DetectLandmarksInImage(grayscale_image, depth_image, face_detections[face], clnf_model, det_parameters);
-
-            // Estimate head pose
+            cout << "Found a face! Detecting landmarks..." << endl;
+            bool success = LandmarkDetector::DetectLandmarksInVideo(
+                             grayscale_image, cv::Mat_<float>(), face_detection, clnf_model, det_parameters);
             cv::Vec6d headPose = LandmarkDetector::GetCorrectedPoseWorld(clnf_model, fx, fy, cx, cy);
 
             if(success)
             {
+                cout << "Found landmarks!" << endl;
                 landmarkFinder.processFrame(clnf_model, headPose);
             }
         }
