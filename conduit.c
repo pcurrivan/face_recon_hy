@@ -216,7 +216,7 @@ int validSessionID(char * in_sessionID)
   db_result = PQexecParams(db_connection, db_statement, 2, NULL, parameter_values, NULL, NULL, 0);
   if(PQresultStatus(db_result) != PGRES_TUPLES_OK || PQntuples(db_result) != 1)
   {
-    printf("<p>System error. sessionId: %s  ipaddr: %s", parameter_values[0], parameter_values[1]);
+    printf("<p>System error. sessionId: %s  ipaddr:  %s", parameter_values[0], parameter_values[1]);
     printf("<p>System error. PQresultStatus: %d  PQntuples: %d", PQresultStatus(db_result), PQntuples(db_result));
     back_to_login();
     exit(EXIT_FAILURE);
