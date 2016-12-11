@@ -397,7 +397,7 @@ int main (int argc, char **argv)
         int startFrame = m*i + 1;
         int endFrame = m*(i+1);
         threads.push_back(
-            &thread(processFrames, LandmarkFinder(startFrame, endFrame), det_parameters)
+            new thread(processFrames, LandmarkFinder(startFrame, endFrame), det_parameters)
         );
     }
     for (thread* t : threads)
