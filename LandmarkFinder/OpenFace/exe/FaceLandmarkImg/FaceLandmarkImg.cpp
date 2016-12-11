@@ -327,7 +327,7 @@ void processFrames(LandmarkFinder landmarkFinder, LandmarkDetector::FaceModelPar
         if (read_image.empty())
         {
             cout << "Could not read the input image" << endl;
-            return 1;
+            return;
         }
         cout << "Loaded file: " << file << endl;
 
@@ -388,7 +388,7 @@ int main (int argc, char **argv)
     ////////////////////////////////////////////////////////////////////////
     // PROCESS FRAMES
     ////////////////////////////////////////////////////////////////////////
-    vector<thread> threads;
+    vector<thread*> threads;
     unsigned int numCores = thread::hardware_concurrency();
     cout << "Found " << numCores << " processing cores" << endl;
     for (int i=0; i < numCores; i++)
@@ -397,11 +397,11 @@ int main (int argc, char **argv)
         int startFrame = m*i + 1;
         int endFrame = m*(i+1);
         threads.push_back(
-            thread(processFrames, LandmarkFinder(startFrame, endFrame), det_parameters)
+            &thread(processFrames, LandmarkFinder(startFrame, endFrame), det_parameters)
         );
     }
-    for (thread t : threads)
-        t.join();
+    for (thread* t : threads)
+        t->join();
 
 //    thread t1(processFrames, LandmarkFinder(1, numFrames/4));
 //    thread t2(processFrames, LandmarkFinder(numFrames/4 + 1, numFrames / 2));
