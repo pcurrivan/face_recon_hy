@@ -81,7 +81,8 @@
         $data = array(
             'SESSIONID' => $session_id,
             'VIDEOID' => $video_id,
-            'DETAILS' => -1
+            'DETAILS' => -1,
+            'CLIENT_IP' => $_SERVER['REMOTE_ADDR']
             );
         //http://stackoverflow.com/questions/5647461/how-do-i-send-a-post-request-with-php
         $curl = curl_init($dest);
