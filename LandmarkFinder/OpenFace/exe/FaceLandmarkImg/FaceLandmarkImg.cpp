@@ -83,6 +83,7 @@
 #include "/usr/include/postgresql/libpq-fe.h"
 #include <sstream>
 #include <iostream>
+#include <thread>
 
 using namespace std;
 
@@ -395,7 +396,8 @@ int main (int argc, char **argv)
         for(size_t face=0; face < face_detections.size() && face < 1; ++face) //hack to only do one face
         {
             // if there are multiple detections go through them
-            bool success = LandmarkDetector::DetectLandmarksInImage(grayscale_image, depth_image, face_detections[face], clnf_model, det_parameters);
+            bool success = LandmarkDetector::DetectLandmarksInVideo(grayscale_image, depth_image, face_detections[face], clnf_model, det_parameters);
+//            bool success = LandmarkDetector::DetectLandmarksInImage(grayscale_image, depth_image, face_detections[face], clnf_model, det_parameters);
 
             // Estimate head pose
             cv::Vec6d headPose = LandmarkDetector::GetCorrectedPoseWorld(clnf_model, fx, fy, cx, cy);
