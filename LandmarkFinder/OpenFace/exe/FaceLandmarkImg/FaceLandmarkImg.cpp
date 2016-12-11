@@ -207,16 +207,20 @@ public:
         int n = clnf_model.patch_experts.visibilities[0][0].rows;
         for (int i = 0; i < n; ++i)
         {
-            cout << "inserting landmark: " << clnf_model.detected_landmarks.at<double>(i) << ", " << clnf_model.detected_landmarks.at<double>(i+n) << endl;
+//            cout << "inserting landmark: " << clnf_model.detected_landmarks.at<double>(i) << ", " << clnf_model.detected_landmarks.at<double>(i+n) << endl;
             ss << ", " << clnf_model.detected_landmarks.at<double>(i);
             ss << ", " << clnf_model.detected_landmarks.at<double>(i + n);
         }
 
         ss << ");";
 
-        cout << "Constructed INSERT statement:\n" << ss.str() << endl;
-
+//        cout << "Constructed INSERT statement:\n" << ss.str() << endl;
+        cout << "INSERT statement constructed for frame " << currentFrame << endl;
         addStatement(ss.str());
+    }
+    int getCurrentFrame()
+    {
+        return currentFrame;
     }
 };
 
@@ -321,9 +325,9 @@ void convert_to_grayscale(const cv::Mat& in, cv::Mat& out)
     }
 }
 
-void processFrames(LandmarkFinder landmarkFinder, LandmarkDetector::FaceModelParameters det_parameters)
+void processFrames(int threadId, LandmarkFinder landmarkFinder, LandmarkDetector::FaceModelParameters det_parameters)
 {
-    cout << "Loading face detection modules..." << endl;
+    cout << "[thread " << threadId << "] " << "Loading face detection modules..." << endl;
     clnf_model = LandmarkDetector::CLNF(det_parameters.model_location);
     classifier = cv::CascadeClassifier(det_parameters.face_detector_location);
     cout << "Modules loaded" << endl;
@@ -335,10 +339,10 @@ void processFrames(LandmarkFinder landmarkFinder, LandmarkDetector::FaceModelPar
         cv::Mat read_image = cv::imread(file, -1);
         if (read_image.empty())
         {
-            cout << "Could not read the input image" << endl;
-            return;
+            cout << "[thread " << threadId << "] " << "Could not read the input image. Skipping it." << endl;
+            continue;
         }
-        cout << "Loaded file: " << file << endl;
+        cout << "[thread " << threadId << "] " << "Loaded file: " << file << endl;
 
         // Convert to Grayscale
         cv::Mat_<uchar> grayscale_image;
@@ -353,25 +357,25 @@ void processFrames(LandmarkFinder landmarkFinder, LandmarkDetector::FaceModelPar
         fx = (fx + fy) / 2.0;
         fy = fx;
 
-        cout << "Looking for a face..." << endl;
+        cout << "[thread " << threadId << "] " << "Looking for a face..." << endl;
         cv::Rect_<double> face_detection;
         if (LandmarkDetector::DetectSingleFace(face_detection, grayscale_image, classifier, cv::Point2i(-1,-1)))
         {
-            cout << "Found a face! Detecting landmarks..." << endl;
+            cout << "[thread " << threadId << "] " << "Found a face! Detecting landmarks..." << endl;
             bool success = LandmarkDetector::DetectLandmarksInVideo(
                              grayscale_image, cv::Mat_<float>(), face_detection, clnf_model, det_parameters);
             cv::Vec6d headPose = LandmarkDetector::GetCorrectedPoseWorld(clnf_model, fx, fy, cx, cy);
 
             if(success)
             {
-                cout << "Found landmarks!" << endl;
+                cout << "[thread " << threadId << "] " << "Found landmarks!" << endl;
                 landmarkFinder.processFrame(clnf_model, headPose);
             }
             else
-                cout << "Failed to find landmarks" << endl;
+                cout << "[thread " << threadId << "] " << "Could not find landmarks for face in frame " << landmarkFinder.getCurrentFrame() << endl;
         }
         else
-            cout << "Could not find a face" << endl;
+            cout << "[thread " << threadId << "] " << "Could not find a face for frame " << landmarkFinder.getCurrentFrame() endl;
     }
 }
 
@@ -386,6 +390,9 @@ int main (int argc, char **argv)
                                               videoId,
                                               arguments);
     LandmarkDetector::FaceModelParameters det_parameters(arguments);
+
+    if (det_parameters.quiet_mode)
+        cout << "Running in quiet mode" << endl;
 
     cout << "parameters parsed..." << endl;
     cout << "inputDir: " << inputDir.string() << endl
@@ -410,7 +417,7 @@ int main (int argc, char **argv)
         int startFrame = m*i + 1;
         int endFrame = m*(i+1);
         threads.push_back(
-            new thread(processFrames, LandmarkFinder(startFrame, endFrame), det_parameters)
+            new thread(processFrames, i, LandmarkFinder(startFrame, endFrame), det_parameters)
         );
     }
     for (thread* t : threads)
