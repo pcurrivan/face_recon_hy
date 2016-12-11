@@ -312,7 +312,7 @@ void convert_to_grayscale(const cv::Mat& in, cv::Mat& out)
     }
 }
 
-void processFrames(LandmarkFinder landmarkFinder)
+void processFrames(LandmarkFinder landmarkFinder, LandmarkDetector::FaceModelParameters det_parameters)
 {
     cout << "Loading face detection modules..." << endl;
     clnf_model = LandmarkDetector::CLNF(det_parameters.model_location);
@@ -397,7 +397,7 @@ int main (int argc, char **argv)
         int startFrame = m*i + 1;
         int endFrame = m*(i+1);
         threads.push_back(
-            thread(processFrames, LandmarkFinder(startFrame, endFrame))
+            thread(processFrames, LandmarkFinder(startFrame, endFrame), det_parameters)
         );
     }
     for (thread t : threads)
