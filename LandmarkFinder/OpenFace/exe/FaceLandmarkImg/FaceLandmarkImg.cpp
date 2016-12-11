@@ -375,7 +375,7 @@ void processFrames(int threadId, LandmarkFinder landmarkFinder, LandmarkDetector
                 cout << "[thread " << threadId << "] " << "Could not find landmarks for face in frame " << landmarkFinder.getCurrentFrame() << endl;
         }
         else
-            cout << "[thread " << threadId << "] " << "Could not find a face for frame " << landmarkFinder.getCurrentFrame() endl;
+            cout << "[thread " << threadId << "] " << "Could not find a face for frame " << landmarkFinder.getCurrentFrame() << endl;
     }
 }
 
