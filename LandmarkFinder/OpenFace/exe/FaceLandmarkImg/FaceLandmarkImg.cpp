@@ -419,16 +419,6 @@ int main (int argc, char **argv)
         delete t;
     }
 
-//    thread t1(processFrames, LandmarkFinder(1, numFrames/4));
-//    thread t2(processFrames, LandmarkFinder(numFrames/4 + 1, numFrames / 2));
-//    thread t3(processFrames, LandmarkFinder(numFrames/2 + 1, 3* numFrames / 4));
-//    thread t4(processFrames, LandmarkFinder(3* numFrames / 4 + 1, numFrames));
-//
-//    t1.join();
-//    t2.join();
-//    t3.join();
-//    t4.join();
-
     ////////////////////////////////////////////////////////////////////////
     // COMMIT TO DB
     ////////////////////////////////////////////////////////////////////////
