@@ -90,7 +90,6 @@ using namespace std;
 //face detection modules
 LandmarkDetector::CLNF clnf_model;
 cv::CascadeClassifier classifier;
-dlib::frontal_face_detector face_detector_hog;
 
 //video information
 boost::filesystem::path inputDir;
@@ -152,18 +151,20 @@ void getNumFrames() //from video_metadata table in db
 class LandmarkFinder
 {
     int currentFrame;
+    int startFrame, endFrame;
 
 public:
     boost::filesystem::path currentFile;
-    LandmarkFinder()
+    LandmarkFinder(int startFrame=1, int endFrame=numFrames)
+        :startFrame(startFrame), endFrame(endFrame)
     {
-        currentFrame = 0;
+        currentFrame = startFrame-1;
     }
 
     bool nextFrame()
     {
         currentFrame++;
-        if (currentFrame > numFrames)
+        if (currentFrame > endFrame)
             return false;
 
         //construct current file path:
@@ -208,57 +209,56 @@ public:
 
         statements.push_back(ss.str());
     }
+};
 
-    void doTransaction()
+void doTransaction()
+{
+    if (statements.empty())
     {
-        if (statements.empty())
-        {
-            cout << "No statements to execute." << endl;
-            return;
-        }
-        cout << "[LandmarkFinder] Beginning database transaction." << endl;
+        cout << "No statements to execute." << endl;
+        return;
+    }
+    cout << "[LandmarkFinder] Beginning database transaction." << endl;
 
-        PGresult *db_result;
+    PGresult *db_result;
 
-        PGconn *db_connection = PQconnectdb(dbConnectString.c_str());
-        if (PQstatus(db_connection) != CONNECTION_OK)
-        {
-            printf("<P>[3]System error. Please contact customer support.<BR>");
-            PQfinish(db_connection);
-            exit(EXIT_FAILURE);
-        }
+    PGconn *db_connection = PQconnectdb(dbConnectString.c_str());
+    if (PQstatus(db_connection) != CONNECTION_OK)
+    {
+        printf("<P>[3]System error. Please contact customer support.<BR>");
+        PQfinish(db_connection);
+        exit(EXIT_FAILURE);
+    }
 
-        db_result = PQexec(db_connection, "BEGIN");
-        if (PQresultStatus(db_result) != PGRES_COMMAND_OK)
+    db_result = PQexec(db_connection, "BEGIN");
+    if (PQresultStatus(db_result) != PGRES_COMMAND_OK)
+    {
+        cout << PQresStatus(PQresultStatus(db_result)) << endl;
+        cout << PQresultErrorMessage(db_result);
+        printf("<P>[4]System error. Please contact customer support.<BR>");
+        PQfinish(db_connection);
+        exit(EXIT_FAILURE);
+    }
+    PQclear(db_result);
+
+    for (string statement : statements)
+    {
+        PGresult *db_result = PQexec(db_connection, statement.c_str());
+        if(PQresultStatus(db_result) != PGRES_COMMAND_OK)
         {
             cout << PQresStatus(PQresultStatus(db_result)) << endl;
             cout << PQresultErrorMessage(db_result);
-            printf("<P>[4]System error. Please contact customer support.<BR>");
-            PQfinish(db_connection);
+            printf("<p>[5]System error. Please contact customer service.<DB>");
             exit(EXIT_FAILURE);
         }
         PQclear(db_result);
-
-        for (string statement : statements)
-        {
-            PGresult *db_result = PQexec(db_connection, statement.c_str());
-            if(PQresultStatus(db_result) != PGRES_COMMAND_OK)
-            {
-                cout << PQresStatus(PQresultStatus(db_result)) << endl;
-                cout << PQresultErrorMessage(db_result);
-                printf("<p>[5]System error. Please contact customer service.<DB>");
-                exit(EXIT_FAILURE);
-            }
-            PQclear(db_result);
-        }
-
-        db_result = PQexec(db_connection, "END");
-        PQclear(db_result);
-        PQfinish(db_connection);
-        cout << "Transaction committed. Inserted " << statements.size() << " rows." << endl;
     }
 
-};
+    db_result = PQexec(db_connection, "END");
+    PQclear(db_result);
+    PQfinish(db_connection);
+    cout << "Transaction committed. Inserted " << statements.size() << " rows." << endl;
+}
 
 vector<string> get_arguments(int argc, char **argv)
 {
@@ -312,38 +312,13 @@ void convert_to_grayscale(const cv::Mat& in, cv::Mat& out)
     }
 }
 
-int main (int argc, char **argv)
+void processFrames(LandmarkFinder landmarkFinder)
 {
-    ////////////////////////////////////////////////////////////////////////
-    //PARSE PARAMS
-    ////////////////////////////////////////////////////////////////////////
-    vector<string> arguments = get_arguments(argc, argv);
-    LandmarkDetector::get_img_params_hellyeah(inputDir,
-                                              dbHost, dbName, dbUser, dbPassword,
-                                              videoId,
-                                              arguments);
-    LandmarkDetector::FaceModelParameters det_parameters(arguments);
-
-    cout << "parameters parsed..." << endl;
-    cout << "inputDir: " << inputDir.string() << endl
-        << "db info: " << dbHost << ", " << dbName << ", " << dbUser << ", " << dbPassword << endl
-        << "videoId: " << videoId << endl;
-
-    ////////////////////////////////////////////////////////////////////////
-    // LOAD MODULES
-    ////////////////////////////////////////////////////////////////////////
     cout << "Loading face detection modules..." << endl;
     clnf_model = LandmarkDetector::CLNF(det_parameters.model_location);
     classifier = cv::CascadeClassifier(det_parameters.face_detector_location);
-//    face_detector_hog = dlib::get_frontal_face_detector();
     cout << "Modules loaded" << endl;
 
-    ////////////////////////////////////////////////////////////////////////
-    // PROCESS FRAMES
-    ////////////////////////////////////////////////////////////////////////
-    makeDbConnectString();
-    getNumFrames();
-    LandmarkFinder landmarkFinder;
     while(landmarkFinder.nextFrame())
     {
         // Load Image
@@ -369,7 +344,7 @@ int main (int argc, char **argv)
         fx = (fx + fy) / 2.0;
         fy = fx;
 
-	    cout << "Looking for a face..." << endl;
+        cout << "Looking for a face..." << endl;
         cv::Rect_<double> face_detection;
         if (LandmarkDetector::DetectSingleFace(face_detection, grayscale_image, classifier, cv::Point2i(-1,-1)))
         {
@@ -385,7 +360,63 @@ int main (int argc, char **argv)
             }
         }
     }
-    landmarkFinder.doTransaction();
+}
+
+int main (int argc, char **argv)
+{
+    ////////////////////////////////////////////////////////////////////////
+    //PARSE PARAMS
+    ////////////////////////////////////////////////////////////////////////
+    vector<string> arguments = get_arguments(argc, argv);
+    LandmarkDetector::get_img_params_hellyeah(inputDir,
+                                              dbHost, dbName, dbUser, dbPassword,
+                                              videoId,
+                                              arguments);
+    LandmarkDetector::FaceModelParameters det_parameters(arguments);
+
+    cout << "parameters parsed..." << endl;
+    cout << "inputDir: " << inputDir.string() << endl
+        << "db info: " << dbHost << ", " << dbName << ", " << dbUser << ", " << dbPassword << endl
+        << "videoId: " << videoId << endl;
+
+    ////////////////////////////////////////////////////////////////////////
+    // PREPARE GLOBAL STATE
+    ////////////////////////////////////////////////////////////////////////
+    makeDbConnectString();
+    getNumFrames();
+
+    ////////////////////////////////////////////////////////////////////////
+    // PROCESS FRAMES
+    ////////////////////////////////////////////////////////////////////////
+    vector<thread> threads;
+    unsigned int numCores = thread::hardware_concurrency();
+    cout << "Found " << numCores << " processing cores" << endl;
+    for (int i=0; i < numCores; i++)
+    {
+        int m = numFrames/numCores;
+        int startFrame = m*i + 1;
+        int endFrame = m*(i+1);
+        threads.push_back(
+            thread(processFrames, LandmarkFinder(startFrame, endFrame))
+        );
+    }
+    for (thread t : threads)
+        t.join();
+
+//    thread t1(processFrames, LandmarkFinder(1, numFrames/4));
+//    thread t2(processFrames, LandmarkFinder(numFrames/4 + 1, numFrames / 2));
+//    thread t3(processFrames, LandmarkFinder(numFrames/2 + 1, 3* numFrames / 4));
+//    thread t4(processFrames, LandmarkFinder(3* numFrames / 4 + 1, numFrames));
+//
+//    t1.join();
+//    t2.join();
+//    t3.join();
+//    t4.join();
+
+    ////////////////////////////////////////////////////////////////////////
+    // COMMIT TO DB
+    ////////////////////////////////////////////////////////////////////////
+    doTransaction();
     return 0;
 }
 
