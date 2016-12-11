@@ -84,6 +84,7 @@
 #include <sstream>
 #include <iostream>
 #include <thread>
+#include <mutex>
 
 using namespace std;
 
@@ -99,7 +100,15 @@ int numFrames;
 //database information
 string dbHost, dbName, dbUser, dbPassword;
 string dbConnectString;
+
 vector<string> statements; //elements of the transaction
+mutex statementsMutex;
+void addStatement (string statement) //thread-safe push_back to vector
+{
+    statementsMutex.lock();
+    statements.push_back(statement);
+    statementsMutex.unlock();
+}
 
 void makeDbConnectString()
 {
@@ -207,7 +216,7 @@ public:
 
         cout << "Constructed INSERT statement:\n" << ss.str() << endl;
 
-        statements.push_back(ss.str());
+        addStatement(ss.str());
     }
 };
 
@@ -358,7 +367,11 @@ void processFrames(LandmarkFinder landmarkFinder, LandmarkDetector::FaceModelPar
                 cout << "Found landmarks!" << endl;
                 landmarkFinder.processFrame(clnf_model, headPose);
             }
+            else
+                cout << "Failed to find landmarks" << endl;
         }
+        else
+            cout << "Could not find a face" << endl;
     }
 }
 
@@ -401,7 +414,10 @@ int main (int argc, char **argv)
         );
     }
     for (thread* t : threads)
+    {
         t->join();
+        delete t;
+    }
 
 //    thread t1(processFrames, LandmarkFinder(1, numFrames/4));
 //    thread t2(processFrames, LandmarkFinder(numFrames/4 + 1, numFrames / 2));
