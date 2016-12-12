@@ -34,6 +34,9 @@
         mkdir("../../data");
         mkdir("../../data/vid");
     }
+    if (!is_writeable($dir)) {
+        echo("Unable write to video directory. Oops!");
+    }
 
     // Check if name already in use
     check_filename_duplicity($filename); 
