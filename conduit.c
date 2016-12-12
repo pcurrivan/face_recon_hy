@@ -173,7 +173,7 @@ int main(void)
         printf("<p>Session ID: %s<br>", sessionID);
       }
       // validate session id
-      if(validSessionID(sessionID) != 0)
+      if(validSessionID(sessionID, clientIp) != 0)
       {
         printf("<p>Unexpected values. Please contact Customer Support<BR>");
         back_to_login();
@@ -186,7 +186,7 @@ int main(void)
   return 0;
 }
 
-int validSessionID(char * in_sessionID)
+int validSessionID(char * in_sessionID, char * clientIp)
 {
   char * sessionValid;
   PGconn *db_connection;
