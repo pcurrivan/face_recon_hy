@@ -2,6 +2,10 @@
     include "session_utils.php";
     include "db_utils.php";
     include "post_utils.php";
+
+    ini_set('display_errors',1);
+    error_reporting(E_ALL);
+
     //linux
     $dir = "/var/www/html/data/vid"; //absolute path to directory
     //windows
