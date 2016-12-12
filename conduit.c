@@ -140,10 +140,6 @@ int main(void)
           sprintf(keyValue, "%.*s", (int)(strlen(token) - strlen(VIDEOID)), token + strlen(VIDEOID));
           videoID = strtol(keyValue, NULL, 10);
         }
-        else if(strcmp(keyName, CLIENT_IP) == 0)
-        {
-          sprintf(clientIp, "%.*s", (int)(strlen(token) - strlen(CLIENT_IP)), token + strlen(CLIENT_IP));
-        }
         else
         {
           strncpy(keyName, token, strlen(SESSIONID));
@@ -152,6 +148,10 @@ int main(void)
           {
             sprintf(sessionID, "%.*s", (int)(strlen(token) - strlen(SESSIONID)), token + strlen(SESSIONID));
          //   sessionID = strtol(keyValue, NULL, 10);
+          }
+          else if(strcmp(keyName, CLIENT_IP) == 0)
+          {
+            sprintf(clientIp, "%.*s", (int)(strlen(token) - strlen(CLIENT_IP)), token + strlen(CLIENT_IP));
           }
           else
           {
