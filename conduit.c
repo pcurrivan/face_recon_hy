@@ -77,7 +77,7 @@
 
 //forward declarations
 int processVideo(long);
-int validSessionID(char *);
+int validSessionID(char *,char *);
 void back_to_login();
 void unencode(char *src, char *last, char *dest)
 {
