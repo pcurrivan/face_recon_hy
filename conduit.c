@@ -105,9 +105,11 @@ int main(void)
   char keyValue[9] = "";
   long videoID = -1;
   char sessionID[255] = "";
+  char clientIp[255] = "";
   const char *VIDEOID = "VIDEOID=";
   const char *SESSIONID = "SESSIONID=";
   const char *DETAILS = "DETAILS=";
+  const char *CLIENT_IP = "CLIENT_IP=";
 
   printf("%s%c%c\n", "Content-Type:text/html;charset=iso-8859-1",13,10);
   printf("<TITLE>Response</TITLE>\n");
@@ -137,6 +139,10 @@ int main(void)
         {
           sprintf(keyValue, "%.*s", (int)(strlen(token) - strlen(VIDEOID)), token + strlen(VIDEOID));
           videoID = strtol(keyValue, NULL, 10);
+        }
+        else if(strcmp(keyName, CLIENT_IP) == 0)
+        {
+          sprintf(clientIp, "%.*s", (int)(strlen(token) - strlen(CLIENT_IP)), token + strlen(CLIENT_IP));
         }
         else
         {
@@ -182,7 +188,6 @@ int main(void)
 
 int validSessionID(char * in_sessionID)
 {
-  char * req_ipaddr;
   char * sessionValid;
   PGconn *db_connection;
   PGresult *db_result;
@@ -195,9 +200,7 @@ int validSessionID(char * in_sessionID)
 //  int parameter_lengths[2];
 //  int parameter_formats[2];
 
-  req_ipaddr = getenv("REMOTE_ADDR");
-//  req_ipaddr = getenv("REMOTE_ADDR");
-  printf("<p> the remote addr is '%s'.<BR>", req_ipaddr);
+  printf("<p> the remote addr is '%s'.<BR>", clientIp);
   db_connection = PQconnectdb("host = 'localhost' dbname = 'pipedream' user = 'piper' password = 'letm3in'");
   if(PQstatus(db_connection) != CONNECTION_OK)
   {
@@ -212,7 +215,7 @@ int validSessionID(char * in_sessionID)
 
   snprintf(session_ID, MAX_SESSION_ID_LENGTH, "%s", in_sessionID);
   parameter_values[0] = &session_ID[0];
-  parameter_values[1] = &req_ipaddr[0];
+  parameter_values[1] = &clientIp[0];
   strncpy(&db_statement[0], "SELECT extract(minute from (current_timestamp - session_time)) <= 30 from sessions where session_id = $1 and ipaddr = $2", MAX_DB_STATEMENT_BUFFER_LENGTH);
   db_result = PQexecParams(db_connection, db_statement, 2, NULL, parameter_values, NULL, NULL, 0);
   if(PQresultStatus(db_result) != PGRES_TUPLES_OK || PQntuples(db_result) != 1)
